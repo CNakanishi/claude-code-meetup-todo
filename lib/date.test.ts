@@ -10,8 +10,8 @@ describe("isOverdue", () => {
     expect(isOverdue("2026-06-30", "2026-07-01")).toBe(true);
   });
 
-  it("returns true when the due date is today", () => {
-    expect(isOverdue("2026-07-01", "2026-07-01")).toBe(true);
+  it("returns false when the due date is today", () => {
+    expect(isOverdue("2026-07-01", "2026-07-01")).toBe(false);
   });
 
   it("returns false when the due date is in the future", () => {
