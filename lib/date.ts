@@ -8,7 +8,7 @@ export function todayStr(): string {
 
 export function isOverdue(dueDate: string | null, today: string = todayStr()): boolean {
   if (!dueDate) return false;
-  return dueDate <= today;
+  return dueDate < today;
 }
 
 export function formatDue(dueDate: string | null): string {

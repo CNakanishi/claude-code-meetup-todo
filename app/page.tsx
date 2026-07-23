@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { Todo } from "@/lib/store";
+import type { Priority, Todo } from "@/lib/store";
 import { formatDue, isOverdue, todayStr } from "@/lib/date";
+import { sortTodos } from "@/lib/sort";
+import type { SortKey } from "@/lib/sort";
 
 type Filter = "all" | "active" | "done";
 
@@ -12,11 +14,15 @@ const FILTER_LABELS: { key: Filter; label: string }[] = [
   { key: "done", label: "完了済み" },
 ];
 
+const PRIORITY_LABELS: Record<Priority, string> = { high: "高", medium: "中", low: "低" };
+
 export default function Home() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [priority, setPriority] = useState<Priority>("medium");
   const [filter, setFilter] = useState<Filter>("all");
+  const [sortKey, setSortKey] = useState<SortKey>("default");
   const [error, setError] = useState("");
 
   const refresh = useCallback(async () => {
@@ -34,7 +40,7 @@ export default function Home() {
     const res = await fetch("/api/todos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, dueDate }),
+      body: JSON.stringify({ title, dueDate, priority }),
     });
     if (!res.ok) {
       const body = await res.json();
@@ -43,6 +49,7 @@ export default function Home() {
     }
     setTitle("");
     setDueDate("");
+    setPriority("medium");
     await refresh();
   }
 
@@ -57,14 +64,15 @@ export default function Home() {
   }
 
   const today = todayStr();
-  const doneCount = todos.filter((t) => t.completed).length;
-  let summaryText = `${doneCount} / ${todos.length} 件完了`;
 
-  const visible = todos.filter((t) => {
-    if (filter === "active") return t.completed;
-    if (filter === "done") return !t.completed;
-    return true;
-  });
+  const visible = sortTodos(
+    todos.filter((t) => {
+      if (filter === "active") return !t.completed;
+      if (filter === "done") return t.completed;
+      return true;
+    }),
+    sortKey
+  );
 
   return (
     <main>
@@ -81,6 +89,11 @@ export default function Home() {
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
         />
+        <select value={priority} onChange={(e) => setPriority(e.target.value as Priority)}>
+          <option value="high">高</option>
+          <option value="medium">中</option>
+          <option value="low">低</option>
+        </select>
         <button type="submit">追加</button>
       </form>
       {error && <p className="error">{error}</p>}
@@ -94,6 +107,10 @@ export default function Home() {
             {f.label}
           </button>
         ))}
+        <select value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)}>
+          <option value="default">作成順</option>
+          <option value="priority">優先度順</option>
+        </select>
       </div>
       <ul className="todo-list">
         {visible.map((t) => (
@@ -103,6 +120,9 @@ export default function Home() {
               checked={t.completed}
               onChange={() => toggle(t.id)}
             />
+            <span className={`badge-priority priority-${t.priority}`}>
+              {PRIORITY_LABELS[t.priority]}
+            </span>
             <span className="title">{t.title}</span>
             {!t.completed && isOverdue(t.dueDate, today) && (
               <span className="badge-overdue">期限切れ</span>
