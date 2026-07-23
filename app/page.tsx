@@ -57,12 +57,10 @@ export default function Home() {
   }
 
   const today = todayStr();
-  const doneCount = todos.filter((t) => t.completed).length;
-  let summaryText = `${doneCount} / ${todos.length} 件完了`;
 
   const visible = todos.filter((t) => {
-    if (filter === "active") return t.completed;
-    if (filter === "done") return !t.completed;
+    if (filter === "active") return !t.completed;
+    if (filter === "done") return t.completed;
     return true;
   });
 
